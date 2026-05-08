@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magic-pipeline"
+version = "0.1.0"
+description = "占位包：Magic-pipeline 流程编排工具（即将推出）"
+readme = "README.md"
+license = "MIT" 
+license-files = ["LICENSE"]
+authors = [
+    { name = "wxd123", email = "wxd123@users.noreply.github.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.8"
+dependencies = []  # 如果有依赖，在这里添加
+
+[project.urls]
+Homepage = "https://github.com/wxd123/magic-pipeline"
+
+
+
+
+
+[dependency-groups]
+dev = [
+    "build>=1.2.2.post1",
+    "twine>=6.1.0",
+]

@@ -21,7 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = []  # 如果有依赖，在这里添加
 
 [project.urls]
@@ -34,5 +34,9 @@ Homepage = "https://github.com/wxd123/magic-pipeline"
 [dependency-groups]
 dev = [
     "build>=1.2.2.post1",
+    "magic-base",
     "twine>=6.1.0",
 ]
+
+[tool.uv.sources]
+magic-base = { path = "../magic-base", editable = true }

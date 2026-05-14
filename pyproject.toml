@@ -22,7 +22,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 requires-python = ">=3.9"
-dependencies = []  # 如果有依赖，在这里添加
+dependencies = [
+    "pyyaml>=6.0.3",
+]  # 如果有依赖，在这里添加
 
 [project.urls]
 Homepage = "https://github.com/wxd123/magic-pipeline"

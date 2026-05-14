@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import sys
 from typing import Any, Dict, Optional
@@ -34,7 +35,8 @@ class ConfigLoader:
 def get_config_files(args):
     """获取配置路径"""
     if args.pipeline:
-        return Path(args.pipeline), None
+        ConfigLoader.find_files(Path(args.pipeline)), None
+
     elif args.config_path:
         pipeline, prompt = ConfigLoader.find_files(Path(args.config_path))
         if pipeline:
@@ -42,38 +44,31 @@ def get_config_files(args):
         if prompt:
             print(f"🔍 自动发现配置文件: {prompt}")
             
-        return pipeline
+        return pipeline, prompt
     return None, None
 
 
-def load_and_validate_config(args):
-    """加载并验证配置，返回 (config, source_path)"""
-    # 自动发现配置
-    if args.config_path:
-        pipeline, prompt = get_config_files(Path(args.config_path))
-        if not pipeline:
-            print(f"❌ 未找到 pipeline 配置文件")
-            sys.exit(1)
-        args.pipeline = str(pipeline)
-        if prompt and not args.prompt_config:
-            args.prompt_config = str(prompt)
-            print(f"🔍 自动发现: {pipeline}\n   Prompt: {prompt}")
+def validate_config(args) -> bool:
+    """验证配置参数是否合法"""
+    if not (args.config_path or args.pipeline):
+        print("🔍 --config-path 或 --pipeline 必须至少配置一个参数")
+        return False
     
-    if not args.pipeline and not args.clean:
-        print("❌ 需要指定 --pipeline 或 --config-path")
-        sys.exit(1)
+    # 可选：进一步验证配置路径是否存在
+    if args.config_path and not os.path.exists(args.config_path):
+        print(f"❌ 配置文件不存在: {args.config_path}")
+        return False
     
-    if not args.pipeline:
-        return None, None  # clean 模式可能不需要配置    
-    
-    
-    pipeline_config = ConfigLoader.load_yaml(pipeline)
-    if not pipeline_config:
-        sys.exit(1)
-    
-    prompt_config = ConfigLoader.load_yaml(prompt)
-    if not prompt_config:
-        sys.exit(1)
-    
-    return pipeline_config, prompt_config
+    return True
 
+
+def get_work_dir(config: dict[str, str]):
+    work_dir = None    
+    if config and config.get('work_dir'):  # 使用 get 避免 KeyError
+        work_dir = config['work_dir']
+    else:
+        code = config.get('code') if config else None  # 安全获取 code
+        code = code or 'test'
+        work_dir = f"{Path.home()}/magic/{code}"
+    
+    return work_dir

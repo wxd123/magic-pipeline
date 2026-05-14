@@ -8,16 +8,15 @@ from magic_pipeline.context import MagicPipelineContext
 class CommandExecutor:
     """负责执行 pipeline 中的命令"""
     
-    def __init__(self, models_config: Dict[str, Any], default_language: str = "java"):
+    def __init__(self, models_config: Dict[str, Any]):
         """
         初始化命令执行器
         
         Args:
             models_config: 模型配置字典，键为模型引用名，值为模型配置（包含模型名称等）
-            default_language: 默认编程语言，当命令引用中没有指定语言时使用，默认为 "java"
         """
         self.models_config = models_config
-        self.default_language = default_language
+        
         
         # 使用全局 LLM 管理器
         self.llm_manager = get_llm_manager()
@@ -29,8 +28,7 @@ class CommandExecutor:
         """
         执行单个步骤
         
-        Args:
-            ctx: 执行上下文，包含当前执行状态和数据
+        Args:            
             step: 步骤配置字典，必须包含 "command" 字段，可选包含 "models"、"model_ref"、"description" 等
             
         Returns:

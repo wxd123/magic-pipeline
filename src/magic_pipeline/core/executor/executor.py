@@ -1,11 +1,13 @@
 # packages/comment/src/magicc_comment/pipeline/executor.py
+import copy
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from magic_pipeline.context.context import PipelineContextConfig
 from magic_pipeline.result import Result
 from .command_executor import CommandExecutor
 from magic_pipeline.core.command import Command
 from magic_pipeline.context import MagicPipelineContext, StepContext, CommandContext
-
+from magic_pipeline.utils.loader import validate_config, get_config_files, get_work_dir
 class PipelineExecutor:
     """
     Pipeline 执行器，负责协调整个注释生成流程。
@@ -46,21 +48,30 @@ class PipelineExecutor:
         generate 步骤的 models 字段为可选，未指定则使用命令默认模型
     """
     
-    def __init__(self, config: Dict[str, Any], cmd_list: List[Command]):
+    def __init__(self, args: Dict[str, Any], cmd_list: List[Command]):
         """
         初始化 Pipeline 执行器。
 
         根据配置设置语言环境，注册对应语言的命令，并初始化命令执行器。
 
         Args:
-            config: 配置字典，通常从 pipeline.yaml 加载，应包含以下键：
-                - language: 编程语言标识（如 "java", "python"），默认为 "java"
+            args: 传入参数，pipeline或config-path必须至少包含一项：
+                - project.language: 编程语言标识（如 "java", "python"），默认为 "java"
+                - project.name: 项目名称
+                - project.code: 项目代码
+                - project.version: 项目版本(工具维护的版本，非代码版本)
                 - models: 模型池配置字典，定义可用模型及其参数
                 - pipeline: Pipeline 步骤列表，每个步骤为包含 command 字段的字典
         
         示例:
             config = {
-                "language": "java",
+                “project”:
+                    "name": "test java comment"
+                    "code": "comment"
+                    "description": "pipeline for java comment generation"
+                    "version": "1.0.0"
+                    "language": "java",
+                    "source_path": "source/path/of/java/project"
                 "models": {
                     "qwen_0.5b": {
                         "provider": "ollama",
@@ -78,53 +89,55 @@ class PipelineExecutor:
             }
             executor = PipelineExecutor(config)            
         """
-        self.config = config
-        self.language = config.get("language", "java")
+        self.config = args      
         
         
         MagicPipelineContext.init_context()
 
         # 注册命令
         _command_context: CommandContext = MagicPipelineContext.get_command_context()
-        _command_context.reg_list(cmd_list)        
-        
-        
-        # 初始化命令执行器
-        self.command_executor = CommandExecutor(
-            models_config=config.get("models", {}),
-            default_language=self.language
-        )
+        _command_context.register_list(cmd_list)
 
-        
+        self.setup_context(args,cmd_list);
 
-        self.setup_context(config);
-
-    def setup_context(args, config) -> StepContext:
+    def setup_context(self,args, config, cmd_list) -> bool:
         """设置 Pipeline 上下文"""
-        output_dir = config.get('outputPath')
-        source_path = config.get('sourcePath')
-        ctx = StepContext()
-        ctx.set("work_dir", str(output_dir))  # 统一使用 work_dir
-        ctx.set("source_name", source_path)
-        ctx.set("source_path", str(source_path))
+
+        is_valide = validate_config(args)
+
+        # 初始化命令执行器
+        if is_valide:
+            config, prompt = get_config_files(args)
+            models_config=config.get("models", {})
+            project_config = config.get("project", {})
+            work_dir = get_work_dir(project_config)
+
+            #ctx_command = CommandExecutor(models_config)
+
+            # 初始化命令上下文
+            ctx_command: CommandContext = CommandContext()
+            ctx_command.register_list(cmd_list)
+
+            # 初始化step上下文            
+            ctx_step = StepContext(config)        
+            ctx_step.set("work_dir", work_dir)  # 统一使用 work_dir
+
+            # 初始化pipeline上下文
+            pipeline_config = PipelineContextConfig()
+            pipeline_config.step_context = ctx_step
+            pipeline_config.cmd_context = ctx_command
+            MagicPipelineContext.init_context(pipeline_config)
+            return True
+        else:
+            print(f"参数验证失败，退出pipeline执行.")
+            return False
         
-        if args.prompt_config:
-            prompt_path = Path(args.prompt_config)
-            if prompt_path.exists():
-                ctx.set("prompt_config_path", str(prompt_path))
-                print(f"📝 Prompt 模板: {prompt_path}")
-        
-        if hasattr(args, 'config_path') and args.config_path:
-            ctx.set("config_dir", str(Path(args.config_path).absolute()))
-        
-        MagicPipelineContext.set_step_context(ctx)
-        return ctx
     
     def get_step_context()->StepContext:
         return MagicPipelineContext.get_step_context()
     
     
-    def run(self, pipeline_name: str = "pipeline") -> Result:
+    def run(self,pipeline_name: Optional[str]) -> Result:
         """    
         从配置中获取 Pipeline 步骤列表，按顺序执行每个步骤。
         步骤格式支持两种形式：
@@ -132,11 +145,9 @@ class PipelineExecutor:
             - 字典格式（推荐）: {"command": "java:generate", "models": ["qwen_0.5b"]}
         
         如果任何步骤执行失败，立即返回失败结果，不再执行后续步骤。
-        无论执行成功还是失败，最终都会释放模型资源。
-        
+        无论执行成功还是失败，最终都会释放模型资源。        
         Args:
-            ctx: 上下文对象，包含 Pipeline 执行所需的输入数据
-            pipeline_name: Pipeline 配置的名称，默认为 "pipeline"
+            pipeline_name: pipeline 名称
         
         Returns:
             Result 对象:
@@ -157,13 +168,19 @@ class PipelineExecutor:
         """
         try:
             # 获取 pipeline 配置
-            pipeline = self.config.get(pipeline_name)
-            if not pipeline:
-                return Result.fail(f"Pipeline '{pipeline_name}' not found")
+            step_context:StepContext = MagicPipelineContext.get_step_context()
+
+            if pipeline_name:
+                project_config = step_context.get('project', {})
+                if not project_config.name:
+                    return Result.fail(f"pipeline '{pipeline_name}' not found")
             
             # 执行 pipeline 中的每个步骤
-            for step in pipeline:
-                result = self.command_executor.execute_step(step)
+            pipeline = step_context.get('pipeline',{})
+            for step in pipeline:              
+
+                command_executor = CommandExecutor(step)
+                result = command_executor.execute_step(step)
                 if not result.success:
                     return result
             

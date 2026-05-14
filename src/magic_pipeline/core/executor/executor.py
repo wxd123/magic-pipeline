@@ -1,9 +1,10 @@
-# magic_pipeline/core/executor/executor.py
-from typing import Dict, Any
+# packages/comment/src/magicc_comment/pipeline/executor.py
+from pathlib import Path
+from typing import Dict, Any, List
 from magic_pipeline.result import Result
-from magic_pipeline.register import reg_command
 from .command_executor import CommandExecutor
-
+from magic_pipeline.core.command import Command
+from magic_pipeline.context import MagicPipelineContext, StepContext, CommandContext
 
 class PipelineExecutor:
     """
@@ -45,7 +46,7 @@ class PipelineExecutor:
         generate 步骤的 models 字段为可选，未指定则使用命令默认模型
     """
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], cmd_list: List[Command]):
         """
         初始化 Pipeline 执行器。
 
@@ -80,14 +81,48 @@ class PipelineExecutor:
         self.config = config
         self.language = config.get("language", "java")
         
+        
+        MagicPipelineContext.init_context()
+
         # 注册命令
-        regist_command(self.language)
+        _command_context: CommandContext = MagicPipelineContext.get_command_context()
+        _command_context.reg_list(cmd_list)        
+        
         
         # 初始化命令执行器
         self.command_executor = CommandExecutor(
             models_config=config.get("models", {}),
             default_language=self.language
         )
+
+        
+
+        self.setup_context(config);
+
+    def setup_context(args, config) -> StepContext:
+        """设置 Pipeline 上下文"""
+        output_dir = config.get('outputPath')
+        source_path = config.get('sourcePath')
+        ctx = StepContext()
+        ctx.set("work_dir", str(output_dir))  # 统一使用 work_dir
+        ctx.set("source_name", source_path)
+        ctx.set("source_path", str(source_path))
+        
+        if args.prompt_config:
+            prompt_path = Path(args.prompt_config)
+            if prompt_path.exists():
+                ctx.set("prompt_config_path", str(prompt_path))
+                print(f"📝 Prompt 模板: {prompt_path}")
+        
+        if hasattr(args, 'config_path') and args.config_path:
+            ctx.set("config_dir", str(Path(args.config_path).absolute()))
+        
+        MagicPipelineContext.set_step_context(ctx)
+        return ctx
+    
+    def get_step_context()->StepContext:
+        return MagicPipelineContext.get_step_context()
+    
     
     def run(self, pipeline_name: str = "pipeline") -> Result:
         """    

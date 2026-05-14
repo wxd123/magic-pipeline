@@ -1,5 +1,5 @@
 
 # 项目代码
-PROJECT_CODE = 'pipeline'
+PIPELINE_PROJECT_CODE = 'pipeline'
 
 

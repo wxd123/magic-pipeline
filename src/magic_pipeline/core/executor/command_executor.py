@@ -1,8 +1,9 @@
-# magic_pipeline/core/executor/command_executor.py
+# packages/comment/src/magicc_comment/pipeline/command_executor.py
 from typing import Dict, Any, List, Optional
-from magicc_shared.core import Result, LLMCommand
-from magicc_shared.llm.llm_manager import get_llm_manager
-from magicc_shared.context.shared_context import MagicCoderContext
+from magic_pipeline.result import Result
+from magic_pipeline.core.command import LLMCommand
+from magic_pipeline.core.providers import get_llm_manager
+from magic_pipeline.context import MagicPipelineContext
 
 class CommandExecutor:
     """负责执行 pipeline 中的命令"""
@@ -98,7 +99,7 @@ class CommandExecutor:
         if cache_key in self._command_cache:
             return self._command_cache[cache_key]
         
-        cmd_class = MagicCoderContext.get_command().get_with_default(lang, cmd_name, "java")
+        cmd_class = MagicPipelineContext.get_command_context().get_with_default(lang, cmd_name, "java")
         if cmd_class:
             cmd = cmd_class()
             self._command_cache[cache_key] = cmd
@@ -175,7 +176,7 @@ class CommandExecutor:
         models = self._optimize_model_order(models)
 
         # 获取pipeline配置
-        ctx = MagicCoderContext.get_pipeline()
+        ctx = MagicPipelineContext.get_step_context()
         task_info = {
             "command": step.get("command", "unknown"),
             "models": models,
@@ -251,7 +252,7 @@ class CommandExecutor:
         Returns:
             Result: 命令执行结果
         """
-        ctx = MagicCoderContext.get_pipeline()
+        ctx = MagicPipelineContext.get_step_context()
         if step:
             task_info = {
                 "command": step.get("command", "unknown"),

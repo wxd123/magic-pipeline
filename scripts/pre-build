@@ -1,0 +1,19 @@
+# test comment
+python -m apps.comment.src.magicc_comment.cli.cli   \
+  --config-path /mnt/workspace/py_project/comment-test/config     \
+  --source /mnt/workspace/py_project/comment-test/source/etd-sysman
+
+
+  # 工具安装
+uv add python_docstring_markdown --dev
+
+# 运行命令
+## api
+python -m python_docstring_markdown ./src/magic_pipeline ./docs/api-pipeline.md
+
+python -m python_docstring_markdown ./src/magic_pipeline/core/ ./docs/api-pipeline-core.md
+
+python -m python_docstring_markdown ./src/magic_pipeline/context ./docs/api-pipeline-context.md
+
+python -m python_docstring_markdown ./src/magic_pipeline/utils ./docs/api-coder-comment-utils.md
+

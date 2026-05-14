@@ -1,80 +1,105 @@
-# magic_pipeline/context/step_context.py
+# magicc_shared/core/context.py
 
-from typing import List, Dict, Optional, Any
-from magic_pipeline.core.step.step import BaseStep
-
+from typing import Any, Dict, Optional
 
 class StepContext:
-    """步骤上下文 - 负责存储和管理 step 序列"""
+    """
+    简单的字典包装器，提供键值对数据的上下文管理。
     
-    def __init__(self):
-        self._steps: List[BaseStep] = []           # 步骤列表（有序）
-        self._step_map: Dict[str, BaseStep] = {}   # step_id -> step 映射
-        self._current_index: int = -1              # 当前执行位置
+    该类封装了字典操作，提供了类型安全的 get/set 方法，
+    支持链式调用和数据转换功能。适用于传递共享状态或配置信息。
     
-    def add_step(self, step: BaseStep) -> None:
-        """添加步骤到序列末尾"""
-        self._steps.append(step)
-        self._step_map[step.step_id] = step
+    示例:
+        >>> ctx = Context({"user": "admin"})
+        >>> ctx.get("user")
+        'admin'
+        >>> ctx.set("role", "editor").get("role")
+        'editor'
+        >>> ctx.has("user")
+        True
+    """
     
-    def add_steps(self, steps: List[BaseStep]) -> None:
-        """批量添加步骤"""
-        for step in steps:
-            self.add_step(step)
+    def __init__(self, data: Optional[Dict[str, Any]] = None):
+        """
+        初始化上下文对象。
+        
+        Args:
+            data: 初始字典数据，若为 None 则初始化为空字典。
+        """
+        if data is None:
+            self._data = {}
+        else:
+            self._data = data.copy() or {}
     
-    def get_step(self, step_id: str) -> Optional[BaseStep]:
-        """根据 ID 获取步骤"""
-        return self._step_map.get(step_id)
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        获取指定键的值。
+        
+        Args:
+            key: 要查询的键名。
+            default: 键不存在时返回的默认值，默认为 None。
+        
+        Returns:
+            键对应的值，若键不存在则返回 default。
+        """
+        return self._data.get(key, default)
     
-    def get_step_by_index(self, index: int) -> Optional[BaseStep]:
-        """根据索引获取步骤"""
-        if 0 <= index < len(self._steps):
-            return self._steps[index]
-        return None
+    def set(self, key: str, value: Any) -> 'StepContext':
+        """
+        设置键值对，支持链式调用。
+        
+        Args:
+            key: 要设置的键名。
+            value: 要设置的值。
+        
+        Returns:
+            返回当前 Context 实例，便于链式调用。
+        
+        示例:
+            >>> ctx = Context().set("a", 1).set("b", 2)
+        """
+        self._data[key] = value
+        return self
     
-    def get_all_steps(self) -> List[BaseStep]:
-        """获取所有步骤（按顺序）"""
-        return self._steps.copy()
+    def has(self, key: str) -> bool:
+        """
+        检查指定键是否存在。
+        
+        Args:
+            key: 要检查的键名。
+        
+        Returns:
+            键存在时返回 True，否则返回 False。
+        """
+        return key in self._data
     
-    def get_next_step(self) -> Optional[BaseStep]:
-        """获取下一个待执行的步骤"""
-        next_index = self._current_index + 1
-        if next_index < len(self._steps):
-            return self._steps[next_index]
-        return None
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        将上下文数据转换为字典副本。
+        
+        Returns:
+            包含当前所有键值对的字典副本（浅拷贝）。
+        
+        注意:
+            返回的是副本，修改返回值不会影响原 Context 对象。
+        """
+        return self._data.copy()
     
-    def move_to_next(self) -> None:
-        """移动到下一个步骤"""
-        if self._current_index + 1 < len(self._steps):
-            self._current_index += 1
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'StepContext':
+        """
+        从字典创建 Context 实例。
+        
+        Args:
+            data: 源字典数据。
+        
+        Returns:
+            使用 data 初始化的新 Context 实例。
+        
+        示例:
+            >>> ctx = Context.from_dict({"name": "test"})
+        """
+        return cls(data)
     
-    def get_current_step(self) -> Optional[BaseStep]:
-        """获取当前正在执行的步骤"""
-        if 0 <= self._current_index < len(self._steps):
-            return self._steps[self._current_index]
-        return None
-    
-    def get_step_count(self) -> int:
-        """获取步骤总数"""
-        return len(self._steps)
-    
-    def has_next(self) -> bool:
-        """是否还有下一个步骤"""
-        return self._current_index + 1 < len(self._steps)
-    
-    def reset(self) -> None:
-        """重置执行位置"""
-        self._current_index = -1
-    
-    def get_dependencies(self, step_id: str) -> List[str]:
-        """获取指定步骤的依赖列表"""
-        step = self._step_map.get(step_id)
-        return step.depends_on if step else []
-    
-    def get_dependents(self, step_id: str) -> List[str]:
-        """获取依赖指定步骤的所有步骤"""
-        dependents = []
-        for step in self._steps:
-            if step_id in step.depends_on:
-                dependents.append(step.step_id)
-        return dependents
+class MagicStepContext(StepContext):
+    pass

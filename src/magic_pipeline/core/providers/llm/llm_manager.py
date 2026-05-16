@@ -101,7 +101,7 @@ class LLMManager:
 _llm_manager: Optional[LLMManager] = None
 
 
-def get_llm_manager() -> LLMManager:
+def get_llm_manager(provider: str = None) -> LLMManager:
     """获取全局 LLM 管理器（单例）"""
     global _llm_manager
     if _llm_manager is None:

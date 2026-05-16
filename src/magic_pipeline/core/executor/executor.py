@@ -3,10 +3,11 @@ import copy
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from magic_pipeline.context.context import PipelineContextConfig
+from magic_pipeline.core.model.models import ModelConfig
 from magic_pipeline.result import Result
 from .command_executor import CommandExecutor
 from magic_pipeline.core.command import Command
-from magic_pipeline.context import MagicPipelineContext, StepContext, CommandContext
+from magic_pipeline.context import MagicPipelineContext, StepContext, CommandContext, ModelContext
 from magic_pipeline.utils.loader import validate_config, get_config_files, get_work_dir
 class PipelineExecutor:
     """
@@ -108,10 +109,15 @@ class PipelineExecutor:
         # 初始化命令执行器
         if is_valide:
             config, prompt = get_config_files(args)
-            models_config=config.get("models", {})
+            
             project_config = config.get("project", {})
             work_dir = get_work_dir(project_config)
 
+            # 初始化模型上下文
+            models_config=config.get("models", {})
+            model_instances = ModelConfig.from_dict_list(models_config)
+            ctx_model:ModelContext = ModelContext()
+            ctx_model.register_models(model_instances)
             #ctx_command = CommandExecutor(models_config)
 
             # 初始化命令上下文

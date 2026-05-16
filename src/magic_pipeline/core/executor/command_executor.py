@@ -1,8 +1,7 @@
 # packages/comment/src/magicc_comment/pipeline/command_executor.py
 from typing import Dict, Any, List, Optional
 from magic_pipeline.result import Result
-from magic_pipeline.core.command import LLMCommand
-from magic_pipeline.core.providers import get_llm_manager
+from magic_pipeline.core.command import Command
 from magic_pipeline.context import MagicPipelineContext
 
 class CommandExecutor:

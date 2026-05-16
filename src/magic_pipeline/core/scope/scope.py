@@ -1,6 +1,7 @@
 # magic_pipeline/core/scope/scope.py
 from typing import Any, Dict, Optional, TypeVar, cast
 import time
+from magic_pipeline.core.providers import LLMProvider, get_llm_manager
 
 T = TypeVar('T')
 
@@ -9,10 +10,10 @@ class BaseScope:
     """作用域基类 - 只管理资源"""
     
     def __init__(self, name: str):
-        self.name = name
+        self.name = name        
         self.resources: Dict[str, Any] = {}
         self.start_time = None
-    
+
     def __enter__(self):
         self.start_time = time.time()
         self._on_enter()
@@ -44,3 +45,8 @@ class BaseScope:
         if not isinstance(resource, expected_type):
             raise TypeError(f"资源 '{key}' 类型错误")
         return cast(T, resource)
+    
+    def get_llm(self)->Optional[T]:
+        return self.get('llm')
+    
+    

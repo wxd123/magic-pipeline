@@ -2,9 +2,10 @@
 import tempfile
 import shutil
 from pathlib import Path
+from typing import Any, Dict, Optional
 from .scope import BaseScope
-
-
+from magic_pipeline.context import ModelContext, MagicPipelineContext
+from magic_pipeline.core.providers import LLMProvider, get_llm_manager
 class StepScope(BaseScope):
     """步骤作用域 - 临时目录管理"""
     
@@ -32,3 +33,15 @@ class StepScope(BaseScope):
         temp_dir = tempfile.mkdtemp(prefix=prefix)
         self._temp_dirs.append(temp_dir)
         return temp_dir
+    
+    def require_model(self, model_id: str)->bool:
+        """获取模型资源，如果不存在则抛出异常"""
+        model_context: ModelContext = MagicPipelineContext.get_model_context()
+        model = model_context.get_model(model_id)
+        if model is None:
+            raise ValueError(f"步骤 '{self.name}' 需要模型 '{model_id}'，但未找到")
+        else: 
+            llm_provider: LLMProvider = get_llm_manager(model.provider)
+            isvalid = llm_provider.ensure_model(model.name)
+            self.set("llm", llm_provider)
+            return isvalid

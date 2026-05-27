@@ -2,11 +2,10 @@
 from typing import Any, Dict, Optional, TypeVar, cast
 import time
 from magic_pipeline.core.providers import LLMProvider, get_llm_manager
+from magic_pipeline.core.scope.scope_protocol import ScopeProtocol
 
 T = TypeVar('T')
-
-
-class BaseScope:
+class BaseScope():
     """作用域基类 - 只管理资源"""
     
     def __init__(self, name: str):

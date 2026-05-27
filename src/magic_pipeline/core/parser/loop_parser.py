@@ -5,15 +5,15 @@ from uuid import uuid4
 
 from magic_pipeline.context import ParserContext
 from magic_pipeline.core.parser.base_parser import BaseParser
-from magic_pipeline.core.step import LoopStep
-from magic_pipeline.core.command import StepCommand
+from magic_pipeline.core.model import LoopConfig
 
 
-class LoopParser(BaseParser[LoopStep]):
+
+class LoopParser(BaseParser[LoopConfig]):
     """
-    循环解析器 - 解析循环步骤配置为 LoopStep IR
+    循环解析器 - 解析循环步骤配置为 LoopConfig IR
     
-    负责将 YAML/JSON 中的循环配置解析为 LoopStep 对象。
+    负责将 YAML/JSON 中的循环配置解析为 LoopConfig 对象。
     处理 loop 结构解析、模型列表提取、内部步骤递归解析等。
     
     支持的配置格式:
@@ -61,9 +61,9 @@ class LoopParser(BaseParser[LoopStep]):
         2
     """
     
-    def parse(self, config: Dict[str, Any], context: ParserContext) -> LoopStep:
+    def parse(self, config: Dict[str, Any], context: ParserContext) -> LoopConfig:
         """
-        解析循环配置为 LoopStep
+        解析循环配置为 LoopConfig IR
         
         解析流程：
             1. 提取 loop 配置块
@@ -71,7 +71,7 @@ class LoopParser(BaseParser[LoopStep]):
             3. 提取模型列表
             4. 提取依赖关系
             5. 递归解析内部步骤
-            6. 创建 LoopStep 实例
+            6. 创建 LoopConfig 实例
         
         Args:
             config: 循环配置字典，支持以下格式：
@@ -81,7 +81,7 @@ class LoopParser(BaseParser[LoopStep]):
             context: 解析上下文，用于获取子解析器、生成 ID、缓存等
         
         Returns:
-            LoopStep: 解析后的循环步骤对象
+            LoopConfig: 解析后的循环步骤对象
         
         Raises:
             ValueError: 当配置格式错误、缺少必需字段时抛出
@@ -103,29 +103,29 @@ class LoopParser(BaseParser[LoopStep]):
         # 获取模型列表
         models = loop_config.get("models", [])
         if not models:
-            raise ValueError(f"LoopStep {step_id}: 'models' field is required and cannot be empty")
+            raise ValueError(f"LoopConfig {step_id}: 'models' field is required and cannot be empty")
         
         if not isinstance(models, list):
-            raise ValueError(f"LoopStep {step_id}: 'models' must be a list")
+            raise ValueError(f"LoopConfig {step_id}: 'models' must be a list")
         
         # 获取依赖关系
         depends_on = config.get("depends_on", [])
         if depends_on and not isinstance(depends_on, list):
-            raise ValueError(f"LoopStep {step_id}: 'depends_on' must be a list")
+            raise ValueError(f"LoopConfig {step_id}: 'depends_on' must be a list")
         
         # 获取内部步骤配置
         steps_config = loop_config.get("steps", [])
         if not steps_config:
-            raise ValueError(f"LoopStep {step_id}: 'steps' field is required and cannot be empty")
+            raise ValueError(f"LoopConfig {step_id}: 'steps' field is required and cannot be empty")
         
         if not isinstance(steps_config, list):
-            raise ValueError(f"LoopStep {step_id}: 'steps' must be a list")
+            raise ValueError(f"LoopConfig {step_id}: 'steps' must be a list")
         
         # 递归解析内部步骤
         steps = self._parse_inner_steps(steps_config, context)
         
-        return LoopStep(
-            step_id=step_id,
+        return LoopConfig(
+            id=step_id,
             models=models,
             steps=steps,
             depends_on=depends_on
@@ -140,14 +140,14 @@ class LoopParser(BaseParser[LoopStep]):
         递归解析循环体内的步骤
         
         根据每个步骤配置的类型，从上下文获取对应的解析器进行处理。
-        支持嵌套循环（LoopStep 内部可以继续包含 LoopStep）。
+        支持嵌套循环（LoopConfig 内部可以继续包含 LoopConfig）。
         
         Args:
             steps_config: 步骤配置列表
             context: 解析上下文，用于获取子解析器
         
         Returns:
-            解析后的步骤对象列表（StepCommand 或 LoopStep）
+            解析后的步骤对象列表（StepCommand 或 LoopConfig）
         
         Raises:
             ValueError: 当步骤类型未知时抛出
@@ -190,15 +190,15 @@ class LoopParser(BaseParser[LoopStep]):
             return "loop"
         return "unknown"
     
-    def validate(self, ir: LoopStep) -> Tuple[bool, List[str]]:
+    def validate(self, ir: LoopConfig) -> Tuple[bool, List[str]]:
         """
-        验证 LoopStep 的有效性
+        验证 LoopConfig 的有效性
         
         检查必需的字段是否存在、格式是否正确。
         同时递归验证内部步骤的有效性。
         
         Args:
-            ir: 待验证的 LoopStep 实例
+            ir: 待验证的 LoopConfig 实例
         
         Returns:
             Tuple[bool, List[str]]: 
@@ -207,24 +207,24 @@ class LoopParser(BaseParser[LoopStep]):
         """
         errors = []
         
-        # 验证 step_id
-        if not ir.step_id:
-            errors.append("LoopStep: step_id is empty")
+        # 验证 id
+        if not ir.id:
+            errors.append("LoopConfig: id is empty")
         
         # 验证 models
         if not ir.models:
-            errors.append(f"LoopStep {ir.step_id}: models list is empty")
+            errors.append(f"LoopConfig {ir.id}: models list is empty")
         
         if ir.models and not isinstance(ir.models, list):
-            errors.append(f"LoopStep {ir.step_id}: models must be a list")
+            errors.append(f"LoopConfig {ir.id}: models must be a list")
         
         # 验证 depends_on
         if ir.depends_on and not isinstance(ir.depends_on, list):
-            errors.append(f"LoopStep {ir.step_id}: depends_on must be a list")
+            errors.append(f"LoopConfig {ir.id}: depends_on must be a list")
         
         # 验证 steps
         if not ir.steps:
-            errors.append(f"LoopStep {ir.step_id}: steps list is empty")
+            errors.append(f"LoopConfig {ir.id}: steps list is empty")
         
         # 递归验证内部步骤
         for idx, step in enumerate(ir.steps):
@@ -233,13 +233,13 @@ class LoopParser(BaseParser[LoopStep]):
                 is_valid, step_errors = step.validate()
                 if not is_valid:
                     for err in step_errors:
-                        errors.append(f"LoopStep {ir.step_id}.steps[{idx}]: {err}")
+                        errors.append(f"LoopConfig {ir.id}.steps[{idx}]: {err}")
             else:
                 # 基本验证
-                if hasattr(step, 'step_id') and not step.step_id:
-                    errors.append(f"LoopStep {ir.step_id}.steps[{idx}]: step_id is empty")
+                if hasattr(step, 'id') and not step.id:
+                    errors.append(f"LoopConfig {ir.id}.steps[{idx}]: id is empty")
                 if hasattr(step, 'command') and not step.command:
-                    errors.append(f"LoopStep {ir.step_id}.steps[{idx}]: command is empty")
+                    errors.append(f"LoopConfig {ir.id}.steps[{idx}]: command is empty")
         
         return len(errors) == 0, errors
     

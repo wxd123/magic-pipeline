@@ -1,3 +1,3 @@
 from .scope import BaseScope
-
-__all__ = ['BaseScope']
+from .scope_protocol import ScopeProtocol
+__all__ = ['BaseScope', 'ScopeProtocol']

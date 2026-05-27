@@ -15,5 +15,5 @@ python -m python_docstring_markdown ./src/magic_pipeline/core/ ./docs/api-pipeli
 
 python -m python_docstring_markdown ./src/magic_pipeline/context ./docs/api-pipeline-context.md
 
-python -m python_docstring_markdown ./src/magic_pipeline/utils ./docs/api-coder-comment-utils.md
+python -m python_docstring_markdown ./src/magic_pipeline/core/validate ./docs/api-pipeline-validate.md
 

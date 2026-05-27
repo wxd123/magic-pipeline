@@ -1,9 +1,9 @@
 
 # magic_pipeline/core/model/loops.py
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any, Union
-from abc import ABC, abstractmethod
-from .commands import CommandConfig
+from dataclasses import dataclass
+from typing import List, Dict, Any, Union
+
+from magic_tool.pipeline import CommandConfig
 
 
 @dataclass

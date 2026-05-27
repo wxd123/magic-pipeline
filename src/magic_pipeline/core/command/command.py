@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
-from magic_pipeline.result import Result
+from magic_tool.pipeline import CommandConfig, Result
 
 
 class Command(ABC):
@@ -22,7 +22,7 @@ class Command(ABC):
     """
     
     @abstractmethod
-    def execute(self) -> Result:
+    def execute(self, cmd_config: CommandConfig) -> Result:
         """
         执行命令的核心方法。
         

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from magic_pipeline.context.context import PipelineContextConfig
 from magic_pipeline.core.model.models import ModelConfig
-from magic_pipeline.result import Result
+from magic_tool.pipeline import Result
 from .command_executor import CommandExecutor
 from magic_pipeline.core.command import Command
 from magic_pipeline.context import MagicPipelineContext, StepContext, CommandContext, ModelContext

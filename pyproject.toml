@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "magic-pipeline"
-version = "0.1.0"
+version = "0.1.1"
 description = "占位包：Magic-pipeline 流程编排工具（即将推出）"
 readme = "README.md"
 license = "MIT" 
@@ -37,9 +37,13 @@ Homepage = "https://github.com/wxd123/magic-pipeline"
 dev = [
     "build>=1.2.2.post1",
     "magic-base",
+    "magic-tool",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.1.0",
     "python-docstring-markdown>=0.2.2",
     "twine>=6.1.0",
 ]
 
 [tool.uv.sources]
 magic-base = { path = "../magic-base", editable = true }
+magic-tool = { path = "../magic-tool", editable = true }

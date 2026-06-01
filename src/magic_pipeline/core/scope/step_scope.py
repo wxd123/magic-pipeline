@@ -5,6 +5,7 @@ from pathlib import Path
 from .scope import BaseScope
 from magic_pipeline.context import ModelContext, MagicPipelineContext
 from magic_pipeline.core.providers import LLMProvider, get_llm_manager
+
 class StepScope(BaseScope):
     """步骤作用域 - 临时目录管理"""
     

@@ -4,8 +4,8 @@
 """
 
 from typing import Dict, Type, Optional, List, Tuple
-from magic_pipeline.core.command import Command, LLMCommand
-
+from magic_base.protocol.pipeline import  LLMCommand
+from magic_base.protocol.pipeline import Command
 
 class CommandContext:
     """
@@ -50,17 +50,17 @@ class CommandContext:
         注册单个命令到容器中。
         
         Args:           
-            cmd_class: 命令类，必须继承自 Command
+            cmd_class: 命令类，必须继承自 BaseCommand
         
         Raises:
-            TypeError: 如果 cmd_class 不是 Command 的子类，或命令名已存在
+            TypeError: 如果 cmd_class 不是 BaseCommand 的子类，或命令名已存在
             ValueError: 如果 cmd_class.name 为空字符串
         
         示例:
             >>> container.register(PythonAnalyzeCommand)
         """
         if not issubclass(cmd_class, Command):
-            raise TypeError(f"{cmd_class.__name__} must be a subclass of Command")
+            raise TypeError(f"{cmd_class.__name__} must be a subclass of BaseCommand")
         
         if not cmd_class.name:
             raise ValueError(f"Command name cannot be empty: {cmd_class.name}")
@@ -75,10 +75,10 @@ class CommandContext:
         批量注册命令到容器中。
         
         Args:            
-            cmd_list: 命令类列表，所有类必须继承自 Command
+            cmd_list: 命令类列表，所有类必须继承自 BaseCommand
         
         Raises:
-            TypeError: 如果任一命令类不是 Command 的子类，或命令名已存在
+            TypeError: 如果任一命令类不是 BaseCommand 的子类，或命令名已存在
             ValueError: 如果任一命令类的 name 属性为空字符串
         
         示例:
@@ -87,12 +87,12 @@ class CommandContext:
         accept_list: List[Type[Command]] = []
         if cmd_list:
             for cmd_class in cmd_list:
-                if not issubclass(cmd_class, Command):
-                    raise TypeError(f"{cmd_class.__name__} must be a subclass of Command")                
+                if not isinstance(cmd_class, Command):
+                    raise TypeError(f"{cmd_class.__class__.__name__} must implement Command protocol")                
                 if not cmd_class.name:
                     raise ValueError(f"Command name cannot be empty: {cmd_class.name}")                
                 if cmd_class.name in self._commands:
-                    raise TypeError(f"{cmd_class.__name__} already registed")   
+                    raise TypeError(f"{cmd_class.__class__.__name__} already registed")   
                 accept_list.append(cmd_class)
 
         if accept_list:

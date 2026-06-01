@@ -2,8 +2,9 @@
 
 from magic_pipeline.core.scope.step_scope import StepScope
 from magic_pipeline.core.model import LoopConfig
-from magic_pipeline.core.command import CommandExecutor
-from magic_base.protocol.pipeline import Result, CommandConfig
+from .command_executor import CommandExecutor
+from magic_base.protocol.pipeline import  CommandConfig
+from magic_base.protocol import Result
 
 class StepExecutor:
     """步骤执行器 - 负责执行单个步骤的逻辑"""

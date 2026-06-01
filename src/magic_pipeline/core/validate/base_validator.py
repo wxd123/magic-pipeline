@@ -9,6 +9,7 @@ class BaseValidator:
         self.file_path = file_path
         self.errors = []
         self.warnings = []
+        self.data = None
     
     def validate(self) -> Tuple[bool, List[str], List[str]]:
         """
@@ -27,6 +28,8 @@ class BaseValidator:
                 self.errors.append("配置文件为空")
                 return False, self.errors, self.warnings
             
+            # 缓存文件内容
+            self.data = data
             # 调用子类实现的验证方法
             self._do_validate(data)
             
@@ -35,7 +38,7 @@ class BaseValidator:
         except Exception as e:
             self.errors.append(f"验证异常: {str(e)}")
         
-        return len(self.errors) == 0, self.errors, self.warnings
+        return len(self.errors) == 0, self.errors, self.warnings, self.data
     
     def _do_validate(self, data: dict):
         """子类实现具体的验证逻辑"""

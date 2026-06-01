@@ -1,11 +1,15 @@
 # packages/comment/src/magicc_comment/pipeline/executor.py
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from magic_pipeline.context.context import PipelineContextConfig
+from magic_pipeline.core.model.manifest_yaml import ManifestConfig
 from magic_pipeline.core.model.models import ModelConfig
-from magic_base.protocol.pipeline import Result
+from magic_base.protocol import Result
+
+from magic_pipeline.core.model.pipeline_yaml import PipelineConfig
+from magic_pipeline.core.validate.validator import ProjectArchitectureValidator
 from .command_executor import CommandExecutor
-from magic_pipeline.core.command import Command
+from magic_base.protocol.pipeline import Command
 from magic_pipeline.context import MagicPipelineContext, StepContext, CommandContext, ModelContext
 from magic_pipeline.utils.loader import validate_config, get_config_files, get_work_dir
 class PipelineExecutor:
@@ -55,8 +59,7 @@ class PipelineExecutor:
         根据配置设置语言环境，注册对应语言的命令，并初始化命令执行器。
 
         Args:
-            args: 传入参数，pipeline或config-path必须至少包含一项：
-                - project.language: 编程语言标识（如 "java", "python"），默认为 "java"
+            args: 传入参数，pipeline或config-path必须至少包含一项：                
                 - project.name: 项目名称
                 - project.code: 项目代码
                 - project.version: 项目版本(工具维护的版本，非代码版本)
@@ -100,20 +103,25 @@ class PipelineExecutor:
 
         self.setup_context(args,cmd_list);
 
-    def setup_context(self,args, config, cmd_list) -> bool:
+    def setup_context(self,args,  cmd_list) -> bool:
         """设置 Pipeline 上下文"""
 
         is_valide = validate_config(args)
 
         # 初始化命令执行器
         if is_valide:
-            config, prompt = get_config_files(args)
+            manifestconfig, pipeline_config = self.get_config(args.config_path)
             
-            project_config = config.get("project", {})
+            project_config = pipeline_config.project
             work_dir = get_work_dir(project_config)
 
             # 初始化模型上下文
-            models_config=config.get("models", {})
+            models = pipeline_config.models
+            models_config = []
+            if models:
+                for key, model in models:
+                    models_config.append(model)
+            
             model_instances = ModelConfig.from_dict_list(models_config)
             ctx_model:ModelContext = ModelContext()
             ctx_model.register_models(model_instances)
@@ -124,7 +132,7 @@ class PipelineExecutor:
             ctx_command.register_list(cmd_list)
 
             # 初始化step上下文            
-            ctx_step = StepContext(config)        
+            ctx_step = StepContext(manifestconfig)        
             ctx_step.set("work_dir", work_dir)  # 统一使用 work_dir
 
             # 初始化pipeline上下文
@@ -219,3 +227,13 @@ class PipelineExecutor:
             print("\n" + "="*60)
             print("Pipeline 执行结束，释放模型资源...")
             self.command_executor.release_resources()
+
+    def get_config(self, config_path: str)-> Tuple[ManifestConfig, PipelineConfig]:
+        validator = ProjectArchitectureValidator(config_path)
+        is_valid, errors, warns, manifest, pipeline = validator.validate()
+
+        if is_valid:
+            return manifest, pipeline
+        else:
+            print(f"validate config error: {errors}")
+            return None, None

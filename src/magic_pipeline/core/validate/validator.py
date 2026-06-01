@@ -1,6 +1,8 @@
 # magic_pipeline/core/validate/validator.py
 from pathlib import Path
 from typing import Tuple, List, Optional
+from magic_pipeline.core.model.manifest_yaml import ManifestConfig
+from magic_pipeline.core.model.pipeline_yaml import PipelineConfig
 from magic_pipeline.messages import get_pipeline_msg
 from .manifest_validator import ManifestValidator
 from .pipeline_validator import PipelineValidator
@@ -21,7 +23,7 @@ class ProjectArchitectureValidator:
         self._manifest_config = None
         self._pipeline_config = None
     
-    def validate(self) -> Tuple[bool, List[str], List[str]]:
+    def validate(self) -> Tuple[bool, List[str], List[str], ManifestConfig, PipelineConfig]:
         """执行完整验证（按顺序）"""
         self.errors = []
         self.warnings = []
@@ -45,7 +47,7 @@ class ProjectArchitectureValidator:
         # 5. 验证 pipeline.yaml
         self._validate_pipeline()
         
-        return len(self.errors) == 0, self.errors, self.warnings
+        return len(self.errors) == 0, self.errors, self.warnings, self._manifest_config, self._pipeline_config
     
     def _validate_structure(self):
         """验证项目结构（src-layout / flat-layout）"""
@@ -169,7 +171,7 @@ class ProjectArchitectureValidator:
             return
         
         validator = ManifestValidator(manifest_file)
-        is_valid, errors, warnings = validator.validate()
+        is_valid, errors, warnings, data = validator.validate()
         self.errors.extend(errors)
         self.warnings.extend(warnings)
         

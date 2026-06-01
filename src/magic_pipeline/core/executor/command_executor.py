@@ -1,8 +1,9 @@
 # packages/comment/src/magicc_comment/pipeline/command_executor.py
 
 from magic_pipeline.core.scope.step_scope import StepScope
-from magic_base.protocol.pipeline import Result, CommandConfig
-from magic_pipeline.core.command import Command
+from magic_base.protocol.pipeline import CommandConfig
+from magic_base.protocol import Result
+from magic_base.protocol.pipeline import Command
 
 class CommandExecutor:
     """负责执行 pipeline 中的命令"""

@@ -4,7 +4,7 @@
 """
 
 from typing import List, Optional, Type
-from magic_pipeline.core.command import Command
+from magic_base.protocol.pipeline import Command
 from .command_context import CommandContext
 
 

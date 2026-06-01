@@ -95,7 +95,7 @@ class MagicPipelineContext():
         _pipeline_context = PipelineContext()
         _pipeline_context.step_context = context_config.step_context or StepContext()
         _pipeline_context.command_context = context_config.cmd_context or CommandContext()   
-        _pipeline_context.model_context = context_config.model_context or ModelContext([])
+        _pipeline_context.model_context = context_config.model_context or ModelContext()
 
         # 初始化数据库配置和管理器
         db_config = context_config.db_config or MagicDatabaseConfig()        

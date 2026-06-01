@@ -4,7 +4,7 @@ from typing import Dict, Type, Optional, List
 from magic_base import ApplicationContext
 from magic_pipeline.constant import PIPELINE_PROJECT_CODE
 from magic_pipeline.context import PipelineContext
-from magic_pipeline.core.command import Command
+from magic_base.protocol.pipeline import Command
 
 
 class CommandRegistry:

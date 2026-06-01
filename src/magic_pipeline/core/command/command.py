@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
-from magic_tool.pipeline import CommandConfig, Result
+from magic_base.protocol.pipeline.data_class.command_config import CommandConfig 
+from magic_base.protocol.result import Result
 
 
-class Command(ABC):
+class BaseCommand(ABC):
     """
     命令抽象基类，定义了命令模式的标准接口。
     
@@ -91,7 +92,7 @@ class Command(ABC):
         }
 
 
-class LLMCommand(Command):
+class LLMCommand(BaseCommand):
     """
     需要 LLM（大语言模型）支持的命令抽象基类。
     

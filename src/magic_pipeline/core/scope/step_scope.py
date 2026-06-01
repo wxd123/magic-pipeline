@@ -2,7 +2,6 @@
 import tempfile
 import shutil
 from pathlib import Path
-from typing import Any, Dict, Optional
 from .scope import BaseScope
 from magic_pipeline.context import ModelContext, MagicPipelineContext
 from magic_pipeline.core.providers import LLMProvider, get_llm_manager

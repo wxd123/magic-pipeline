@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import List, Dict, Any, Union
 
-from magic_tool.pipeline import CommandConfig
+from magic_base.protocol.pipeline import CommandConfig
 
 
 @dataclass

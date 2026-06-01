@@ -1,7 +1,7 @@
 # packages/comment/src/magicc_comment/pipeline/command_executor.py
 
 from magic_pipeline.core.scope.step_scope import StepScope
-from magic_tool.pipeline import Result, CommandConfig
+from magic_base.protocol.pipeline import Result, CommandConfig
 from magic_pipeline.core.command import Command
 
 class CommandExecutor:

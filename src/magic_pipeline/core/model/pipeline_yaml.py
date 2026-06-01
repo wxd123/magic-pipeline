@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional
-from pathlib import Path
+
 
 @dataclass
 class ProjectInfo:

@@ -1,4 +1,4 @@
-# shared/context.py
+# magic_pipeline/context/context.py
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -8,6 +8,7 @@ from .command_context import CommandContext
 from .step_context import StepContext
 from magic_pipeline.constant import PIPELINE_PROJECT_CODE
 from .model_context import ModelContext
+from .trace_context import TraceContext
 # 各模块的类定义
 
 @dataclass
@@ -24,13 +25,14 @@ class PipelineContextConfig:
         step_context: 步骤上下文对象，默认使用 StepContext()
         cmd_context: 命令上下文对象，默认使用 CommandContext()
         model_context: 模型上下文对象，默认使用 ModelContext([])
+        trace_context: 追踪上下文对象，默认使用 TraceContext()
     """
     db_config: Optional[BaseDatabaseConfig] = None
     db_manager: Optional[BaseDatabaseManager] = None
     step_context: Optional[StepContext] = None
     cmd_context: Optional[CommandContext] = None
     model_context: Optional[ModelContext] = None
-
+    trace_context: Optional[TraceContext] = None
     
 class PipelineContext:
     """
@@ -43,11 +45,12 @@ class PipelineContext:
         step_context: 步骤上下文，管理步骤执行相关的状态和数据
         command_context: 命令上下文，管理命令执行相关的状态和数据
         model_context: 模型上下文，管理模型相关的实例和配置
+        trace_context: 追踪上下文，管理审计追踪相关的状态和数据
     """
     step_context: Optional[StepContext] = None
     command_context : Optional[CommandContext] = None
     model_context: Optional[ModelContext] = None
-
+    trace_context: Optional[TraceContext] = None
 
 class MagicPipelineContext():
     """
@@ -96,6 +99,7 @@ class MagicPipelineContext():
         _pipeline_context.step_context = context_config.step_context or StepContext()
         _pipeline_context.command_context = context_config.cmd_context or CommandContext()   
         _pipeline_context.model_context = context_config.model_context or ModelContext()
+        _pipeline_context.trace_context = context_config.trace_context or TraceContext()
 
         # 初始化数据库配置和管理器
         db_config = context_config.db_config or MagicDatabaseConfig()        
@@ -184,3 +188,32 @@ class MagicPipelineContext():
         """
         _pipeline_context: PipelineContext = ApplicationContext[PIPELINE_PROJECT_CODE].get_context(PIPELINE_PROJECT_CODE)
         _pipeline_context.model_context = context
+
+    @classmethod
+    def get_trace_context(cls)->TraceContext:
+        """
+        获取追踪上下文实例
+        
+        从全局 ApplicationContext 中获取 PipelineContext，并返回其中的 trace_context。
+        
+        Returns:
+            TraceContext: 追踪上下文实例
+        """
+        _pipeline_context: PipelineContext = ApplicationContext[PipelineContext].get_context(PIPELINE_PROJECT_CODE)
+        _trace_context = _pipeline_context.trace_context
+        return _trace_context
+    
+    @classmethod
+    def set_trace_context(cls, context: TraceContext):
+        """
+        设置追踪上下文实例
+        
+        将新的追踪上下文设置到全局 PipelineContext 中。
+        
+        Args:
+            context: 要设置的 TraceContext 实例
+        """
+        _pipeline_context: PipelineContext = ApplicationContext[PIPELINE_PROJECT_CODE].get_context(PIPELINE_PROJECT_CODE)
+        _pipeline_context.trace_context = context
+
+    

@@ -40,7 +40,7 @@ class ModelContext:
         """
         self.model_configs = {}
 
-    def register_models(self, model_list: List[ModelConfig]):
+    def register_models(self, model_dic: dict[str, ModelConfig])->bool:
         """
         注册模型配置列表
         
@@ -60,12 +60,21 @@ class ModelContext:
             >>> model_ctx.register_models(models)
         """
         # 先验证所有元素类型
-        for m in model_list:
+        for key, m in model_dic.items():
             if not isinstance(m, ModelConfig):
-                raise TypeError(f"模型必须是 ModelConfig 实例: {m}")
-        
+                print(f"模型必须是 ModelConfig 实例: {m}")
+                return False
+            if self.model_configs.get(key):
+                print(f"警告: 模型定义异常，模型ID '{key}' 已存在，请检查模型配置 ")
+                return False
+            
+            
+            
         # 再构建字典
-        self.model_configs = {m.id: m for m in model_list}
+        for key, m in model_dic.items():
+            # print(f"register model - key: {key}, model id: {m.id}, name: {m.name} 成功")
+            self.model_configs[key] = m
+        return True
 
      
     def get_model(self, model_id: str) -> ModelConfig:

@@ -6,9 +6,10 @@ from typing import Optional, Dict, Any, List
 class ModelConfig:
     """直接映射配置文件结构"""
     
-    id: str
+    
     provider: str
     name: str
+    id: str = None
     precision: Optional[str] = "fp16"
     temperature: float = 0.7
     max_tokens: int = 512

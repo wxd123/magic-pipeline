@@ -87,12 +87,12 @@ class CommandContext:
         accept_list: List[Type[Command]] = []
         if cmd_list:
             for cmd_class in cmd_list:
-                if not isinstance(cmd_class, Command):
-                    raise TypeError(f"{cmd_class.__class__.__name__} must implement Command protocol")                
+                if not issubclass(cmd_class, Command):
+                    raise TypeError(f"{cmd_class.__name__} must be a subclass of Command")                
                 if not cmd_class.name:
                     raise ValueError(f"Command name cannot be empty: {cmd_class.name}")                
                 if cmd_class.name in self._commands:
-                    raise TypeError(f"{cmd_class.__class__.__name__} already registed")   
+                    raise TypeError(f"{cmd_class.__name__} already registed")   
                 accept_list.append(cmd_class)
 
         if accept_list:
@@ -115,6 +115,10 @@ class CommandContext:
             >>> if cmd_class:
             ...     result = cmd_class().execute(ctx)
         """
+        # for name, cmd_class in self._commands.items():
+        #     print(f"[DEBUG] Registered command: {name} -> {cmd_class.__name__}")
+
+            
         cmd_command = self._commands.get(cmd_name)        
         return cmd_command
         

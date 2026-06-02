@@ -1,6 +1,8 @@
 from pathlib import Path
-from typing import Tuple, List, Set, Dict
+from typing import Tuple, List, Set, Dict, Any
 from .base_validator import BaseValidator
+from magic_pipeline.core.model.step.step_yaml import  LoopStep, ConditionStep, ParallelStep, SubPipelineStep, Step
+from magic_base.protocol.pipeline import CommandConfig
 
 class PipelineStepsValidator(BaseValidator):
     """pipeline 步骤配置专用验证器"""
@@ -9,6 +11,7 @@ class PipelineStepsValidator(BaseValidator):
         super().__init__(file_path) if file_path else None
         self.pipeline_data = pipeline_data
         self.model_names = model_names or set()
+        self._converted_steps = None  # 存储转换后的 Step 对象
     
     def _do_validate(self, data: list = None):
         """验证pipeline步骤配置"""
@@ -110,6 +113,78 @@ class PipelineStepsValidator(BaseValidator):
                 self.errors.append(
                     f"pipeline[{step_idx}].loop.steps[{cmd_idx}].{field} 必须是字符串类型"
                 )
+    
+    def convert_to_objects(self) -> List[Step]:
+        """将验证通过的字典转换为 Step 对象列表"""
+        if self.errors:
+            raise ValueError("验证失败，无法转换")
+        
+        if self._converted_steps is None:
+            self._converted_steps = self._convert_steps(self.pipeline_data)
+        
+        return self._converted_steps
+    
+    def _convert_steps(self, steps_data: List[dict]) -> List[Step]:
+        """递归转换步骤字典为 Step 对象"""
+        steps = []
+        
+        for item in steps_data:
+            # Command 节点
+            if 'command' in item:
+                steps.append(CommandConfig(
+                    command=item['command'],
+                    source_dir=item.get('source_dir', ''),
+                    output_dir=item.get('output_dir', ''),
+                    params=item.get('params'),
+                    timeout=item.get('timeout')
+                ))
+            
+            # Loop 节点
+            elif 'loop' in item:
+                loop_data = item['loop']
+                steps.append(LoopStep(
+                    id=loop_data.get('id'),
+                    name=loop_data.get('name'),
+                    steps=self._convert_steps(loop_data.get('steps', [])),
+                    models=loop_data.get('models', []),
+                    max_iterations=loop_data.get('max_iterations', 100)
+                ))
+            
+            # Condition 节点（如果需要）
+            elif 'condition' in item:
+                cond_data = item['condition']
+                cases = {}
+                for case_value, case_steps in cond_data.get('cases', {}).items():
+                    cases[case_value] = self._convert_steps(case_steps)
+                
+                default_steps = None
+                if 'default' in cond_data:
+                    default_steps = self._convert_steps(cond_data['default'])
+                
+                steps.append(ConditionStep(
+                    on=cond_data.get('on', ''),
+                    cases=cases,
+                    default=default_steps
+                ))
+            
+            # Parallel 节点（如果需要）
+            elif 'parallel' in item:
+                parallel_data = item['parallel']
+                steps.append(ParallelStep(
+                    steps=self._convert_steps(parallel_data.get('steps', [])),
+                    max_concurrency=parallel_data.get('max_concurrency', 3),
+                    fail_fast=parallel_data.get('fail_fast', True)
+                ))
+            
+            # SubPipeline 节点（如果需要）
+            elif 'sub' in item:
+                sub_data = item['sub']
+                steps.append(SubPipelineStep(
+                    path=sub_data.get('path', ''),
+                    params=sub_data.get('params')
+                ))
+        
+        return steps
 
 
 def validate_pipeline_steps(pipeline_data: list, model_names: Set[str] = None, file_path: Path = None) -> Tuple[bool, List[str], List[str]]:

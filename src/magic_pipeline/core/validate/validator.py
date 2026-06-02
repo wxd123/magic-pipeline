@@ -193,7 +193,7 @@ class ProjectArchitectureValidator:
             return
         
         validator = PipelineValidator(pipeline_file)
-        is_valid, errors, warnings = validator.validate()
+        is_valid, errors, warnings, data = validator.validate()
         self.errors.extend(errors)
         self.warnings.extend(warnings)
         

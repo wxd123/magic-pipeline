@@ -49,7 +49,7 @@ class StepScope(BaseScope):
     def require_cmd(self, cmd_name: str):
         """获取命令实例，如果不存在则抛出异常"""
         cmd_context = MagicPipelineContext.get_command_context()
-        cmd = cmd_context.get_command(cmd_name)
+        cmd = cmd_context.get(cmd_name)
         if cmd is None:
             raise ValueError(f"步骤 '{self.name}' 需要命令 '{cmd_name}'，但未找到")
         return cmd

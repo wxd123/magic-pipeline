@@ -90,7 +90,7 @@ class PipelineValidator(BaseValidator):
         project = self._project_validator.get_config() if self._project_validator else None
         models = self._models_validator.get_configs() if self._models_validator else {}
         providers = self._provider_validator.get_configs() if self._provider_validator else {}
-        
+        pipeline_steps = self._steps_validator.convert_to_objects() if self._steps_validator else []
         if not project:
             # 降级方案：直接转换
             project = ProjectInfo(**data["project"])
@@ -101,7 +101,7 @@ class PipelineValidator(BaseValidator):
             project=project,
             models=models,
             provider=providers,
-            pipeline=data.get("pipeline", [])
+            pipeline=pipeline_steps
         )
 
 

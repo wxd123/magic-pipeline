@@ -2,6 +2,7 @@
 
 from typing import Dict, Any, List, Optional, Tuple
 from magic_pipeline.context.context import PipelineContextConfig
+from magic_pipeline.core.executor.step_executor import StepExecutor
 from magic_pipeline.core.model.manifest_yaml import ManifestConfig
 from magic_pipeline.core.model.models import ModelConfig
 from magic_base.protocol import Result
@@ -93,38 +94,41 @@ class PipelineExecutor:
             executor = PipelineExecutor(config)            
         """
         self.config = args      
-        
+        self.pipeline_config: Optional[PipelineConfig] = None
         
         MagicPipelineContext.init_context()
 
         # 注册命令
-        _command_context: CommandContext = MagicPipelineContext.get_command_context()
-        _command_context.register_list(cmd_list)
+        # _command_context: CommandContext = MagicPipelineContext.get_command_context()
+        # _command_context.register_list(cmd_list)
 
-        self.setup_context(args,cmd_list);
+        self.setup_context(args,cmd_list)
 
     def setup_context(self,args,  cmd_list) -> bool:
         """设置 Pipeline 上下文"""
 
+        # print(f"[DEBUG] cmd_list type: {type(cmd_list)}")
+        # print(f"[DEBUG] cmd_list content: {cmd_list}")
+        # for i, cmd in enumerate(cmd_list):
+        #     print(f"[DEBUG] cmd {i}: {cmd}, type={type(cmd)}, class={getattr(cmd, '__name__', 'N/A')}")
+        
+        
         is_valide = validate_config(args)
 
         # 初始化命令执行器
         if is_valide:
-            manifestconfig, pipeline_config = self.get_config(args.config_path)
-            
+            manifestconfig, pipeline_config = self.get_config(args.get('config_path'))
+            # print(f"setup_context - manifestconfig type: {type(manifestconfig)}")
+            # print(f"setup_context - pipeline_config type: {type(pipeline_config)}")
+            self.pipeline_config = pipeline_config
+
             project_config = pipeline_config.project
             work_dir = get_work_dir(project_config)
 
             # 初始化模型上下文
-            models = pipeline_config.models
-            models_config = []
-            if models:
-                for key, model in models:
-                    models_config.append(model)
-            
-            model_instances = ModelConfig.from_dict_list(models_config)
+            models_config = pipeline_config.models
             ctx_model:ModelContext = ModelContext()
-            ctx_model.register_models(model_instances)
+            ctx_model.register_models(models_config)
             #ctx_command = CommandExecutor(models_config)
 
             # 初始化命令上下文
@@ -132,14 +136,15 @@ class PipelineExecutor:
             ctx_command.register_list(cmd_list)
 
             # 初始化step上下文            
-            ctx_step = StepContext(manifestconfig)        
-            ctx_step.set("work_dir", work_dir)  # 统一使用 work_dir
+            ctx_step = StepContext(pipeline_config)        
+            # ctx_step.set("work_dir", work_dir)  # 统一使用 work_dir
 
             # 初始化pipeline上下文
-            pipeline_config = PipelineContextConfig()
-            pipeline_config.step_context = ctx_step
-            pipeline_config.cmd_context = ctx_command
-            MagicPipelineContext.init_context(pipeline_config)
+            pipeline_context = PipelineContextConfig()
+            pipeline_context.step_context = ctx_step
+            pipeline_context.cmd_context = ctx_command
+            pipeline_context.model_context = ctx_model
+            MagicPipelineContext.init_context(pipeline_context)
             return True
         else:
             print(f"参数验证失败，退出pipeline执行.")
@@ -150,7 +155,7 @@ class PipelineExecutor:
         return MagicPipelineContext.get_step_context()
     
     
-    def run(self,pipeline_name: Optional[str]) -> Result:
+    def run(self) -> Result:
         """    
         从配置中获取 Pipeline 步骤列表，按顺序执行每个步骤。
         步骤格式支持两种形式：
@@ -183,21 +188,27 @@ class PipelineExecutor:
             # 获取 pipeline 配置
             step_context:StepContext = MagicPipelineContext.get_step_context()
 
-            if pipeline_name:
-                project_config = step_context.get('project', {})
-                if not project_config.name:
-                    return Result.fail(f"pipeline '{pipeline_name}' not found")
+            
+            project_config = self.pipeline_config.project
+            if not project_config.name:
+                return Result.error(error_code="PROJECT_NAME_MISSING", error_message="pipeline name not found")
             
             # 执行 pipeline 中的每个步骤
-            pipeline = step_context.get('pipeline',{})
-            for step in pipeline:              
+            steps = step_context.config
+            print(f"[DEBUG] steps type: {type(steps)}")
+            print(f"[DEBUG] steps length: {len(steps) if steps else 0}")
 
-                command_executor = CommandExecutor(step)
-                result = command_executor.execute_step(step)
-                if not result.success:
+            for idx, step in enumerate(steps):
+                # print(f"[DEBUG] Step {idx} - type: {type(step)}")
+                # print(f"[DEBUG] Step {idx} - content: {step}")
+                
+                step_executor = StepExecutor(step)
+                result = step_executor.run()
+                if not result.is_success:
+                    print(f"[DEBUG] Step {idx} failed: {result.error_message}")
                     return result
             
-            return Result.ok(message="Pipeline completed")
+            return Result.success( output={"message": "Pipeline completed"})
         
         finally:
             # 无论成功还是失败，都释放模型资源
@@ -223,10 +234,11 @@ class PipelineExecutor:
             仅在命令执行器实现了 release_resources 方法时才会执行释放操作。
             如果没有实现该方法，跳过释放步骤（不报错）。
         """
-        if hasattr(self.command_executor, 'release_resources'):
-            print("\n" + "="*60)
-            print("Pipeline 执行结束，释放模型资源...")
-            self.command_executor.release_resources()
+        # if hasattr(self.command_executor, 'release_resources'):
+        #     print("\n" + "="*60)
+        #     print("Pipeline 执行结束，释放模型资源...")
+        #     self.command_executor.release_resources()
+        pass
 
     def get_config(self, config_path: str)-> Tuple[ManifestConfig, PipelineConfig]:
         validator = ProjectArchitectureValidator(config_path)

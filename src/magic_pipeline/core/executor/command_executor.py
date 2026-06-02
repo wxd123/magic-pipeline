@@ -52,8 +52,8 @@ class CommandExecutor:
         if isinstance(cmd, Command):
             return cmd.execute(self.scope)
         else:
-            print(f"Invalid command type for {self.cmd_config.command}")
-            return None
+            # print(f"Invalid command type for {self.cmd_config.command}")
+            return Result.error( "error_code", f"Invalid command type for {self.cmd_config.command}")
     
     
     

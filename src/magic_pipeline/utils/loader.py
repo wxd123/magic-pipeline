@@ -66,7 +66,7 @@ def validate_config(args) -> bool:
     return True
 
 
-def get_work_dir(config: ProjectInfo):
+def set_work_dir(config: ProjectInfo)->bool:
     work_dir = None    
     if config and config.work_path:  # 使用 get 避免 KeyError
         work_dir = config.work_path
@@ -74,5 +74,5 @@ def get_work_dir(config: ProjectInfo):
         code = config.code if config else None  # 安全获取 code
         code = code or 'test'
         work_dir = f"{Path.home()}/magic/{code}"
-    
-    return work_dir
+    config.work_path = work_dir  # 将计算得到的 work_dir 设置回 config 对象
+    return True

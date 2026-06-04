@@ -128,37 +128,61 @@ class PipelineStepsValidator(BaseValidator):
         """递归转换步骤字典为 Step 对象"""
         steps = []
         
-        for item in steps_data:
+        STANDARD_FIELDS = {'command', 'type', 'id', 'name', 'model', 'source_dir', 'output_dir', 'timeout'}
+        
+        # print(f"[DEBUG] _convert_steps called, steps_data length: {len(steps_data)}")
+        
+        for idx, item in enumerate(steps_data):
+            # print(f"[DEBUG] processing item {idx}: {list(item.keys())}")
+            
             # Command 节点
             if 'command' in item:
-                steps.append(CommandConfig(
+                # print(f"[DEBUG]   -> creating CommandConfig: {item['command']}")
+                
+                # 剩余字段都放入 params
+                _params = {}
+                for key, value in item.items():
+                    if key not in STANDARD_FIELDS:
+                        _params[key] = value
+
+                cmd = CommandConfig(
                     command=item['command'],
                     source_dir=item.get('source_dir', ''),
                     output_dir=item.get('output_dir', ''),
-                    params=item.get('params'),
+                    params=_params,
                     timeout=item.get('timeout')
-                ))
+                )
+                # print(f"[DEBUG]   -> CommandConfig created, id={id(cmd)}")
+                steps.append(cmd)
             
             # Loop 节点
             elif 'loop' in item:
                 loop_data = item['loop']
-                steps.append(LoopStep(
+                # print(f"[DEBUG]   -> creating LoopStep, id={loop_data.get('id')}, models={loop_data.get('models')}")
+                # print(f"[DEBUG]   -> recursive call for inner steps, length={len(loop_data.get('steps', []))}")
+                
+                loop_step = LoopStep(
                     id=loop_data.get('id'),
                     name=loop_data.get('name'),
                     steps=self._convert_steps(loop_data.get('steps', [])),
                     models=loop_data.get('models', []),
                     max_iterations=loop_data.get('max_iterations', 100)
-                ))
+                )
+                # print(f"[DEBUG]   -> LoopStep created, id={id(loop_step)}")
+                steps.append(loop_step)
             
-            # Condition 节点（如果需要）
+            # Condition 节点
             elif 'condition' in item:
                 cond_data = item['condition']
+                print(f"[DEBUG]   -> creating ConditionStep, on={cond_data.get('on')}")
                 cases = {}
                 for case_value, case_steps in cond_data.get('cases', {}).items():
+                    print(f"[DEBUG]      -> case '{case_value}', recursive call, length={len(case_steps)}")
                     cases[case_value] = self._convert_steps(case_steps)
                 
                 default_steps = None
                 if 'default' in cond_data:
+                    print(f"[DEBUG]      -> default branch, recursive call, length={len(cond_data['default'])}")
                     default_steps = self._convert_steps(cond_data['default'])
                 
                 steps.append(ConditionStep(
@@ -167,23 +191,29 @@ class PipelineStepsValidator(BaseValidator):
                     default=default_steps
                 ))
             
-            # Parallel 节点（如果需要）
+            # Parallel 节点
             elif 'parallel' in item:
                 parallel_data = item['parallel']
+                print(f"[DEBUG]   -> creating ParallelStep, max_concurrency={parallel_data.get('max_concurrency')}")
                 steps.append(ParallelStep(
                     steps=self._convert_steps(parallel_data.get('steps', [])),
                     max_concurrency=parallel_data.get('max_concurrency', 3),
                     fail_fast=parallel_data.get('fail_fast', True)
                 ))
             
-            # SubPipeline 节点（如果需要）
+            # SubPipeline 节点
             elif 'sub' in item:
                 sub_data = item['sub']
+                print(f"[DEBUG]   -> creating SubPipelineStep, path={sub_data.get('path')}")
                 steps.append(SubPipelineStep(
                     path=sub_data.get('path', ''),
                     params=sub_data.get('params')
                 ))
+            
+            else:
+                print(f"[DEBUG]   -> WARNING: unknown step type: {item}")
         
+        # print(f"[DEBUG] _convert_steps returning {len(steps)} steps")
         return steps
 
 

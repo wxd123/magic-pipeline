@@ -24,8 +24,13 @@ classifiers = [
 requires-python = ">=3.9"
 
 dependencies = [
+    "click>=8.1.8",
     "pyyaml>=6.0.3",
 ]  # 如果有依赖，在这里添加
+
+[project.scripts]
+# 或使用别名
+pipeline = "magic_pipeline.cli.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/wxd123/magic-pipeline"
@@ -38,6 +43,7 @@ Homepage = "https://github.com/wxd123/magic-pipeline"
 dev = [
     "build>=1.2.2.post1",
     "magic-base",
+    "magic-pipeline",
     "magic-tool",
     "pytest>=8.4.2",
     "pytest-cov>=7.1.0",
@@ -48,3 +54,9 @@ dev = [
 [tool.uv.sources]
 magic-base = { path = "../magic-base", editable = true }
 magic-tool = { path = "../magic-tool", editable = true }
+magic-pipeline = { workspace = true, editable = true }
+
+[tool.uv.workspace]
+members = [
+    ".",
+]

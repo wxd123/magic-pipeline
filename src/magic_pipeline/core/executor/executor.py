@@ -4,15 +4,16 @@ from typing import Dict, Any, List, Optional, Tuple
 from magic_pipeline.context.context import PipelineContextConfig
 from magic_pipeline.core.executor.step_executor import StepExecutor
 from magic_pipeline.core.model.manifest_yaml import ManifestConfig
-from magic_pipeline.core.model.models import ModelConfig
+
 from magic_base.protocol import Result
 
 from magic_pipeline.core.model.pipeline_yaml import PipelineConfig
 from magic_pipeline.core.validate.validator import ProjectArchitectureValidator
-from .command_executor import CommandExecutor
 from magic_base.protocol.pipeline import Command
 from magic_pipeline.context import MagicPipelineContext, StepContext, CommandContext, ModelContext
-from magic_pipeline.utils.loader import validate_config, get_config_files, get_work_dir
+from magic_pipeline.utils.loader import validate_config,  set_work_dir
+from magic_pipeline.data_access import project_service, Projects
+
 class PipelineExecutor:
     """
     Pipeline 执行器，负责协调整个注释生成流程。
@@ -122,8 +123,15 @@ class PipelineExecutor:
             # print(f"setup_context - pipeline_config type: {type(pipeline_config)}")
             self.pipeline_config = pipeline_config
 
+            
+            #设置工作目录  
             project_config = pipeline_config.project
-            work_dir = get_work_dir(project_config)
+            project_result = self.save_project(project_config)
+            if not project_result.success:
+                print(f"保存项目信息失败: {project_result.message}")
+                return project_result  
+              
+            is_success = set_work_dir(project_config)
 
             # 初始化模型上下文
             models_config = pipeline_config.models
@@ -144,13 +152,28 @@ class PipelineExecutor:
             pipeline_context.step_context = ctx_step
             pipeline_context.cmd_context = ctx_command
             pipeline_context.model_context = ctx_model
+
+            # 配置文件信息也放入上下文，供步骤执行时使用
+            pipeline_context.manifest = manifestconfig
+            pipeline_context.pipeline_config = pipeline_config
+
+            # 将初始化好的上下文设置到全局管理器中
             MagicPipelineContext.init_context(pipeline_context)
             return True
         else:
             print(f"参数验证失败，退出pipeline执行.")
             return False
         
-    
+    def save_project(self, project_config: Projects)->Result:
+        """将项目信息保存到数据库"""
+        existing_project = project_service.find_one({'name': project_config.name, 'version': project_config.version})
+        if existing_project:
+            print(f"项目 '{project_config.name}' 已存在，跳过保存.")
+            return Result.error(error_code="PROJECT_EXISTS", error_message=f"Project {project_config.name} already exists", output=existing_project)
+        else:
+            new_project = project_service.create(project_config)
+            print(f"项目 '{project_config.name}' 已保存到数据库.")
+            return Result.success(output=new_project)
     def get_step_context()->StepContext:
         return MagicPipelineContext.get_step_context()
     
@@ -195,8 +218,8 @@ class PipelineExecutor:
             
             # 执行 pipeline 中的每个步骤
             steps = step_context.config
-            print(f"[DEBUG] steps type: {type(steps)}")
-            print(f"[DEBUG] steps length: {len(steps) if steps else 0}")
+            # print(f"[DEBUG] steps type: {type(steps)}")
+            # print(f"[DEBUG] steps length: {len(steps) if steps else 0}")
 
             for idx, step in enumerate(steps):
                 # print(f"[DEBUG] Step {idx} - type: {type(step)}")

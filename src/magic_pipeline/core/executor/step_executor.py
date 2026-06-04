@@ -1,10 +1,12 @@
+import copy
+
 from magic_pipeline.core.model.step.step_yaml import Step
 from magic_pipeline.core.scope.step_scope import StepScope
 from magic_pipeline.core.model import LoopConfig
 from .command_executor import CommandExecutor
 from magic_base.protocol.pipeline import CommandConfig
 from magic_base.protocol import Result
-from typing import Optional
+from typing import List, Optional
 import uuid
 
 
@@ -42,7 +44,7 @@ class StepExecutor:
         """
         try:
             step = self.step
-            print(f"[DEBUG] Executing step: {step}")
+            # print(f"[DEBUG] Executing step: {step}")
             
             # 步骤类型到执行方法的映射
             switch = {
@@ -99,8 +101,8 @@ class StepExecutor:
                             "step_name": self.step.name
                         }
                     )
-            else:
-                print(f"命令 '{cmd.command}' 不需要模型支持，直接执行")
+            # else:
+            #     print(f"命令 '{cmd.command}' 不需要模型支持，直接执行")
             
             # 执行命令
             executor = CommandExecutor(cmd, step_scope)
@@ -237,7 +239,7 @@ class StepExecutor:
 
     def _execute_steps(
         self, 
-        steps, 
+        steps: List[Step], 
         step_scope: StepScope, 
         model_id: Optional[str] = None,
         iteration: int = 0
@@ -254,10 +256,7 @@ class StepExecutor:
         Returns:
             Result: 步骤执行结果
         """
-        # print(f"[DEBUG] 进入 _execute_steps, iteration={iteration}")
-        # print(f"[DEBUG] steps 类型: {type(steps)}")
-        # print(f"[DEBUG] steps 长度: {len(steps) if steps else 0}")
-        # print(f"[DEBUG] model_id: {model_id}")
+        
         
         if not steps:
             print(f"[WARNING] steps 为空")
@@ -271,7 +270,7 @@ class StepExecutor:
             # print(f"[DEBUG] --- 执行子步骤 {idx+1}/{len(steps)} ---")
             # print(f"[DEBUG] step 类型: {type(step)}")
             # print(f"[DEBUG] step 内容: {step}")
-            
+            # print(f"[DEBUG]   step id={id(step)}, source_dir={step.source_dir}")
             # 如果是命令步骤，设置模型
             if hasattr(step, 'model') and model_id:
                 old_model = step.model
@@ -280,7 +279,8 @@ class StepExecutor:
             
             try:
                 # print(f"[DEBUG] 创建 CommandExecutor")
-                command_executor = CommandExecutor(step, step_scope)
+                _loop_step = copy.deepcopy(step)
+                command_executor = CommandExecutor(_loop_step, step_scope)
                 # print(f"[DEBUG] 开始执行命令")
                 result = command_executor.execute()
                 # print(f"[DEBUG] 命令执行完成, success: {result.success}")
@@ -307,10 +307,10 @@ class StepExecutor:
                     "result": result.output if hasattr(result, 'output') else result
                 })
                 
-                print(f"[DEBUG] 步骤 {idx+1} 执行成功")
+                # print(f"[DEBUG] 步骤 {idx+1} 执行成功")
                 
             except Exception as e:
-                print(f"[ERROR] 步骤 {idx+1} 执行异常: {e}")
+                # print(f"[ERROR] 步骤 {idx+1} 执行异常: {e}")
                 import traceback
                 traceback.print_exc()
                 
@@ -325,7 +325,7 @@ class StepExecutor:
                     }
                 )
         
-        print(f"[DEBUG] _execute_steps 所有步骤执行完成")
+        # print(f"[DEBUG] _execute_steps 所有步骤执行完成")
         
         return Result.success(
             output={

@@ -4,6 +4,9 @@ from typing import Any, Dict, Optional
 
 from magic_base.context.application_context import ApplicationContext
 from magic_base import   BaseDatabaseConfig, BaseDatabaseManager, MagicDatabaseConfig, MagicDatabaseManager
+
+from magic_pipeline.core.model.manifest_yaml import ManifestConfig
+from magic_pipeline.core.model.pipeline_yaml import PipelineConfig
 from .command_context import CommandContext
 from .step_context import StepContext
 from magic_pipeline.constant import PIPELINE_PROJECT_CODE
@@ -26,6 +29,8 @@ class PipelineContextConfig:
         cmd_context: 命令上下文对象，默认使用 CommandContext()
         model_context: 模型上下文对象，默认使用 ModelContext([])
         trace_context: 追踪上下文对象，默认使用 TraceContext()
+        manifest: 可选的 Manifest 配置对象，包含管道清单信息
+        pipeline_config: 可选的 Pipeline 配置对象，包含管道配置信息
     """
     db_config: Optional[BaseDatabaseConfig] = None
     db_manager: Optional[BaseDatabaseManager] = None
@@ -33,7 +38,8 @@ class PipelineContextConfig:
     cmd_context: Optional[CommandContext] = None
     model_context: Optional[ModelContext] = None
     trace_context: Optional[TraceContext] = None
-    
+    manifest: Optional[ManifestConfig] = None
+    pipeline_config: Optional[PipelineConfig] = None
 class PipelineContext:
     """
     管道上下文容器类
@@ -46,11 +52,15 @@ class PipelineContext:
         command_context: 命令上下文，管理命令执行相关的状态和数据
         model_context: 模型上下文，管理模型相关的实例和配置
         trace_context: 追踪上下文，管理审计追踪相关的状态和数据
+        manifest: 可选的 Manifest 配置对象，包含管道清单信息
+        pipeline_config: 可选的 Pipeline 配置对象，包含管道配置信息
     """
     step_context: Optional[StepContext] = None
     command_context : Optional[CommandContext] = None
     model_context: Optional[ModelContext] = None
     trace_context: Optional[TraceContext] = None
+    manifest: Optional[ManifestConfig] = None
+    pipeline_config: Optional[PipelineConfig] = None
 
 class MagicPipelineContext():
     """
@@ -100,6 +110,8 @@ class MagicPipelineContext():
         _pipeline_context.command_context = context_config.cmd_context or CommandContext()   
         _pipeline_context.model_context = context_config.model_context or ModelContext()
         _pipeline_context.trace_context = context_config.trace_context or TraceContext()
+        _pipeline_context.manifest = context_config.manifest or None
+        _pipeline_context.pipeline_config = context_config.pipeline_config or None
 
         # 初始化数据库配置和管理器
         db_config = context_config.db_config or MagicDatabaseConfig()        
@@ -216,4 +228,17 @@ class MagicPipelineContext():
         _pipeline_context: PipelineContext = ApplicationContext[PIPELINE_PROJECT_CODE].get_context(PIPELINE_PROJECT_CODE)
         _pipeline_context.trace_context = context
 
-    
+    def set_manifest_and_pipeline(self, manifest: ManifestConfig, pipeline_config: PipelineConfig):
+        """
+        设置 Manifest 配置对象
+        
+        将新的 Manifest 配置对象设置到全局 PipelineContext 中。
+        
+        Args:
+            manifest: 要设置的 ManifestConfig 实例
+        """
+        _pipeline_context: PipelineContext = ApplicationContext[PIPELINE_PROJECT_CODE].get_context(PIPELINE_PROJECT_CODE)   
+        _pipeline_context.manifest = manifest
+        _pipeline_context.pipeline_config = pipeline_config
+
+   

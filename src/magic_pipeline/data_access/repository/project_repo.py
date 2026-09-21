@@ -17,4 +17,4 @@ class ProjectRepository(MagicBaseRepository[Projects]):
     """
     pass
 
-project_repo : ProjectRepository = ProjectRepository()
+project_repository : ProjectRepository = ProjectRepository()

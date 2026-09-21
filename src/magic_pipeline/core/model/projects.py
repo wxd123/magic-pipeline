@@ -1,10 +1,10 @@
 
 # pipeline_config.py
 from dataclasses import dataclass
-
+from magic_base import BaseDataClass
 
 @dataclass
-class ProjectInfo:
+class ProjectInfo(BaseDataClass):
     """项目信息"""
     name: str
     code: str

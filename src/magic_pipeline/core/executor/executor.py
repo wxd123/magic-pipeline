@@ -122,10 +122,11 @@ class PipelineExecutor:
             # print(f"setup_context - manifestconfig type: {type(manifestconfig)}")
             # print(f"setup_context - pipeline_config type: {type(pipeline_config)}")
             self.pipeline_config = pipeline_config
-
+            self.manifest_config = manifestconfig
             
             #设置工作目录  
-            project_config = pipeline_config.project
+            project_config = Projects.from_dict(pipeline_config.project.to_dict())
+            project_config.config_content = {"pipeline": pipeline_config, "manifest": manifestconfig}
             project_result = self.save_project(project_config)
             if not project_result.success:
                 print(f"保存项目信息失败: {project_result.message}")
@@ -171,7 +172,8 @@ class PipelineExecutor:
             print(f"项目 '{project_config.name}' 已存在，跳过保存.")
             return Result.error(error_code="PROJECT_EXISTS", error_message=f"Project {project_config.name} already exists", output=existing_project)
         else:
-            new_project = project_service.create(project_config)
+
+            new_project = project_service.create_from_model(project_config)
             print(f"项目 '{project_config.name}' 已保存到数据库.")
             return Result.success(output=new_project)
     def get_step_context()->StepContext:

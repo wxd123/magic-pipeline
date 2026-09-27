@@ -2,18 +2,18 @@
 
 ## 定位
 
-magic-pipeline 是一个通用节点编排框架。
+magic-pipeline 是为 magic 生态提供通用节点编排能力的基础设施。
 
-它只做一件事：接收一个 pipeline 定义文件，按文件里声明的节点关系，调度实现了 Command 协议的命令依次执行。
+它是生态的公共底座，不隶属任何具体项目。它只做一件事：接收一个 pipeline 定义文件，按文件里声明的节点关系，调度实现了 Command 协议的命令依次执行。
 
 它不关心命令来自哪个应用，也不知道有哪些应用存在。任何实现了 Command 协议的应用，都可以通过编写 pipeline 定义文件来使用它。
 
 对外提供：
 
 1. 一个通用的 pipeline 定义文件格式。
-2. 一个 Command 协议（消费 magic-protocol 的定义）。
+2. 一个执行接口。
 3. 一个命令注册机制。
-4. 一个执行接口。
+4. （消费）magic-protocol 的 Command 协议。
 
 依赖：只依赖 magic-protocol（拿 Command 协议与共享类型）。
 
@@ -122,7 +122,7 @@ Result
 命令与运行上下文的容器。
 
 - command_context.py：CommandContext，单例，注册 / 查询 / 删除命令。
-- command_decorator.py：@command() 装饰器及便捷函数（register / get / has / list / remove / clear）。
+- command_decorator.py：@command() 装饰器及便捷函数。
 - context.py：PipelineContext（聚合容器）、MagicPipelineContext（全局单例管理）。
 - model_context.py：ModelContext，模型配置注册与查询。
 - step_context.py：StepContext，步骤配置与运行时变量。
@@ -193,10 +193,11 @@ LLM provider 抽象与实现。
 
 pipeline 对外的接口面：
 
-- Command 协议：Command / CommandConfig / Result 类型 —— 归属 magic-protocol
-- pipeline 定义文件格式：pipeline.yaml / manifest.yaml 的结构与字段 —— 归属 magic-pipeline
-- 执行接口：PipelineExecutor 等入口 —— 归属 magic-pipeline
-- 命令注册机制：CommandRegistry / @command 装饰器 —— 归属 magic-pipeline
+契约                    内容                                              归属
+Command 协议            Command / CommandConfig / Result 类型             magic-protocol
+pipeline 定义文件格式    pipeline.yaml / manifest.yaml 的结构与字段        magic-pipeline
+执行接口                PipelineExecutor 等入口                           magic-pipeline
+命令注册机制            CommandRegistry / @command 装饰器                 magic-pipeline
 
 一个应用要使用 pipeline，只需：实现 Command 协议、注册命令、编写 pipeline 定义文件、调用执行接口。pipeline 不关心这个应用是什么。
 
@@ -216,7 +217,7 @@ pipeline 对外的接口面：
 
 未实现 / 待确认：
 
-- 准确清单需人工核对（API 文档不区分已实现 / 未实现）。
+- 准确清单需人工核对。
 
 ## 演进方向
 
